@@ -49,3 +49,34 @@ NULL
 #' @name nameDoc
 #' @keywords internal
 NULL
+
+#' Helper for consistent documentation of `name` argument in cohorts
+#'
+#' @param name A character string with the name of the new cohort.
+#'
+#' @name nameCohortDoc
+#' @keywords internal
+NULL
+
+#' Helper for consistent documentation of `cdm` argument
+#'
+#' @param cdm A `<cdm_reference>` object.
+#'
+#' @name cdmDoc
+#' @keywords internal
+NULL
+
+#' Helper for consistent documentation of `bmiThreshold` argument
+#'
+#' @param bmiThreshold Argument to indicate the thresholds for the obesity using
+#' BMI measurements. It can be:
+#'
+#' - A single number, any BMI measurement above the threshold will be consider
+#' as an obesity record.
+#' - A tibble with the columns `bmi_threshold`, `sex`, `age_min` and `age_max`,
+#' to use age and sex specific thresholds.
+#' - NULL the table `CohortRecipes::bmiThreshold` will be used.
+#'
+#' @name bmiThresholdDoc
+#' @keywords internal
+NULL

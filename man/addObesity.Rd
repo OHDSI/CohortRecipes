@@ -21,9 +21,9 @@ columns.}
 \item{indexDate}{A character string that points to a \code{Date} column in the \code{x}
 table.}
 
-\item{window}{Window to asses \code{bmi} in, it must be a vector of two numeric values \code{c(min, max)}. Window times refer to days since \code{indexDate}.}
+\item{window}{Window to asses \code{obesity} in, it must be a vector of two numeric values \code{c(min, max)}. Window times refer to days since \code{indexDate}.}
 
-\item{conceptSet}{It can either be a \if{html}{\out{<codelist>}}, <codelist_with_details> or <concept_set_expression> object. It must contain \code{bmi} as concepts. If \code{NULL} concepts will be retrieved using the OmopConcepts package.}
+\item{conceptSet}{It can either be a \if{html}{\out{<codelist>}}, <codelist_with_details> or <concept_set_expression> object. It must contain \code{obesity}, \code{bmi} as concepts. If \code{NULL} concepts will be retrieved using the OmopConcepts package.}
 
 \item{bmiThreshold}{Argument to indicate the thresholds for the obesity using
 BMI measurements. It can be:
