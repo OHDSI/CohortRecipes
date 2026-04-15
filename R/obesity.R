@@ -96,6 +96,7 @@ obesityCohort <- function(cdm,
   cdm <- omopgenerics::bind(cdm[[nm1]], cdm[[nm2]], name = name)
   cdm <- omopgenerics::dropSourceTable(cdm = cdm, name = dplyr::starts_with(pref))
   cdm[[name]] |>
+    CohortConstructor::exitAtObservationEnd() |>
     CohortConstructor::unionCohorts(cohortName = "obesity")
 }
 
