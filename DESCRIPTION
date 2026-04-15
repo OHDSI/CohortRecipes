@@ -14,9 +14,13 @@ LazyData: true
 Imports: 
     cli,
     clock,
+    CohortConstructor,
     dplyr,
     omopgenerics,
     PatientProfiles,
     rlang
 Suggests: 
-    OmopConcepts
+    omock,
+    OmopConcepts,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

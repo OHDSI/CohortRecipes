@@ -1,10 +1,110 @@
 
+#' Create the obesity cohort
+#'
+#' @inheritParams cdmDoc
+#' @inheritParams nameCohortDoc
+#' @param conceptSet `r documentationConceptSet(c("obesity", "bmi"))`
+#' @inheritParams bmiThresholdDoc
+#'
+#' @returns The cohort 'obesity' object.
+#' @export
+#'
+#' @examples
+#' \donttest{
+#' library(CohortRecipes)
+#' library(omock)
+#'
+#' cdm <- mockCdmFromDataset(datasetName = "GiBleed", source = "duckdb")
+#'
+#' cdm$obesity <- obesityCohort(cdm = cdm, name = "obesity")
+#'
+#' cdm$obesity
+#'
+#' }
+#'
+obesityCohort <- function(cdm,
+                          name,
+                          conceptSet = NULL,
+                          bmiThreshold = NULL) {
+  # initial checks
+  cdm <- omopgenerics::validateCdmArgument(cdm)
+  name <- omopgenerics::validateNameArgument(name, cdm)
+  conceptSet <- validateConceptSet(conceptSet, c("bmi", "obesity"), cdm)
+  bmiThreshold <- validateBmiThreshold(bmiThreshold)
+
+  pref <- omopgenerics::tmpPrefix()
+
+  # obesity concept records
+  nm1 <- omopgenerics::uniqueTableName(prefix = pref)
+  cdm[[nm1]] <- CohortConstructor::conceptCohort(
+    cdm = cdm,
+    conceptSet = conceptSet["obesity"],
+    name = nm1,
+    exit = "event_start_date"
+  )
+
+  # bmi records
+  nm2 <- omopgenerics::uniqueTableName(prefix = pref)
+  cdm[[nm2]] <- cdm$measurement |>
+    dplyr::filter(
+      .data$measurement_concept_id %in% !!conceptSet[["bmi"]] &
+        !is.na(.data$value_as_number)
+    ) |>
+    dplyr::select("person_id", "measurement_date", bmi = "value_as_number") |>
+    dplyr::compute(name = nm2)
+  if (!omopgenerics::isTableEmpty(cdm[[nm2]])) {
+    if (is.numeric(bmiThreshold)) {
+      cdm[[nm2]] <- cdm[[nm2]] |>
+        dplyr::filter(.data$bmi >= .env$bmiThreshold) |>
+        dplyr::compute(name = nm2)
+    } else {
+      nm3 <- omopgenerics::uniqueTableName(prefix = pref)
+      cdm <- omopgenerics::insertTable(cdm = cdm, name = nm3, table = bmiThreshold)
+      cdm[[nm2]] <- cdm[[nm2]] |>
+        PatientProfiles::addDemographics(
+          age = TRUE,
+          sex = TRUE,
+          priorObservation = FALSE,
+          futureObservation = FALSE,
+          name = nm2
+        ) |>
+        dplyr::inner_join(cdm[[nm3]], by = c("age", "sex")) |>
+        dplyr::filter(.data$bmi >= .data$bmi_threshold) |>
+        dplyr::compute(name = nm2)
+    }
+  }
+  cdm[[nm2]] <- cdm[[nm2]] |>
+    dplyr::group_by(.data$person_id) |>
+    dplyr::summarise(
+      cohort_start_date = min(.data$measurement_date, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    dplyr::rename(subject_id = "person_id") |>
+    dplyr::mutate(
+      cohort_definition_id = 1L,
+      cohort_end_date = cohort_start_date
+    ) |>
+    dplyr::compute(name = nm2) |>
+    omopgenerics::newCohortTable(
+      cohortSetRef = dplyr::tibble(
+        cohort_definition_id = 1L,
+        cohort_name = "obesity_bmi"
+      )
+    )
+
+  # union both cohorts
+  cdm <- omopgenerics::bind(cdm[[nm1]], cdm[[nm2]], name = name)
+  cdm <- omopgenerics::dropSourceTable(cdm = cdm, name = dplyr::starts_with(pref))
+  cdm[[name]] |>
+    CohortConstructor::unionCohorts(cohortName = "obesity")
+}
+
 #' Add obesity flag
 #'
 #' @inheritParams xDoc
 #' @inheritParams indexDateDoc
-#' @param window `r documentationWindow("bmi")`
-#' @param conceptSet `r documentationConceptSet("bmi")`
+#' @param window `r documentationWindow("obesity")`
+#' @param conceptSet `r documentationConceptSet(c("obesity", "bmi"))`
 #' @param bmiThreshold Argument to indicate the thresholds for the obesity using
 #' BMI measurements. It can be:
 #'
