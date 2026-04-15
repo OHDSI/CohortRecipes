@@ -24,3 +24,5 @@ Suggests:
     OmopConcepts,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+URL: https://ohdsi.github.io/CohortRecipes/
+BugReports: https://github.com/ohdsi/CohortRecipes/issues
