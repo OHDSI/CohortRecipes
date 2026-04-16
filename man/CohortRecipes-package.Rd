@@ -8,6 +8,14 @@
 \description{
 What the package does (one paragraph).
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://ohdsi.github.io/CohortRecipes/}
+  \item Report bugs at \url{https://github.com/ohdsi/CohortRecipes/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: First Last \email{first.last@example.com}
 
