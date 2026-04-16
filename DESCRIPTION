@@ -20,6 +20,8 @@ Imports:
     PatientProfiles,
     rlang
 Suggests: 
+    CDMConnector,
+    duckdb,
     omock,
     OmopConcepts,
     testthat (>= 3.0.0)
