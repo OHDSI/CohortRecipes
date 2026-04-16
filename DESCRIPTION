@@ -26,3 +26,5 @@ Suggests:
 Config/testthat/edition: 3
 URL: https://ohdsi.github.io/CohortRecipes/
 BugReports: https://github.com/ohdsi/CohortRecipes/issues
+Remotes:
+    ohdsi/OmopConcepts
