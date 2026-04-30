@@ -1,7 +1,7 @@
 
 #' Helper for consistent documentation of `x` argument
 #'
-#' @param x A `cdm_table` object, it mus contain `person_id` or `subject_id` as
+#' @param x A `cdm_table` object, it must contain `person_id` or `subject_id` as
 #' columns.
 #'
 #' @name xDoc
@@ -61,6 +61,22 @@ NULL
 #' Helper for consistent documentation of `cdm` argument
 #'
 #' @param cdm A `<cdm_reference>` object.
+#'
+#' @name cdmDoc
+#' @keywords internal
+NULL
+
+#' Helper for consistent documentation of addRecipeIntersect functions
+#'
+#' @param x
+#' @param window
+#' @param recipe
+#' @param conceptSet
+#' @param order
+#' @param indexDate
+#' @param censorDate
+#' @param nameStyle
+#' @param name
 #'
 #' @name cdmDoc
 #' @keywords internal
