@@ -1,16 +1,19 @@
-#' Title
+
+#' Create a recipe cohort
 #'
-#' @param cdm
-#' @param name
-#' @param recipe
-#' @param conceptSet
-#' @param subsetCohort
-#' @param subsetCohortId
+#' @inheritParams xDoc
+#' @inheritParams nameDoc
+#' @inheritParams recipeDoc
+#' @inheritParams conceptSetRecipeDoc
+#' @inheritParams subsetDoc
 #'
-#' @returns
+#' @returns A `<cohort_table>` object.
+#'
 #' @export
 #'
 #' @examples
+#' library(CohortRecipes)
+#'
 recipeCohort <- function(cdm,
                          name,
                          recipe,
@@ -185,11 +188,11 @@ cohortRecipeInternal <- function(cdm,
                                  call = parent.frame()) {
   # initial checks
 
-  # records
+  # get records
 
   # set end date
 
-  # combine records
+  # erafy
 
 }
 
@@ -204,7 +207,13 @@ addRecipe <- function(x,
                       nameStyle,
                       name,
                       call = parent.frame()) {
+  # initial checks
 
+  # get records
+
+  # set end date
+
+  # intersection
 }
 
 recipeRecords <- function(cdm,
