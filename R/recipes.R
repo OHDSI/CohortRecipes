@@ -30,16 +30,16 @@ recipeCohort <- function(cdm,
   )
 }
 
-#' Title
+#' Add columns to indicate the presence or not of `recipe` cohorts
 #'
-#' @param x
-#' @param window
-#' @param recipe
-#' @param conceptSet
+#' @inheritParams xDoc
+#' @inheritParams windowRecipeDoc
+#' @inheritParams recipeDoc
+#' @inheritParams conceptSetRecipeDoc
 #' @param indexDate
 #' @param censorDate
-#' @param nameStyle
-#' @param name
+#' @inheritParams nameStyleDoc
+#' @inheritParams nameDoc
 #'
 #' @returns
 #' @export

@@ -110,6 +110,19 @@ NULL
 #' @keywords internal
 NULL
 
+#' Helper for consistent documentation of `window` argument in recipes
+#'
+#' @param conceptSet It can either be a <codelist>, <codelist_with_details> or
+#' <concept_set_expression> object. It must contain all the conceptSet needed
+#' for the specified recipes. You can check the conceptSets needed for each
+#' recipe with `recipeConcepSets()`. If `NULL` concepts will be retrieved using
+#' the OmopConcepts package. If extra conceptSets are provided they will be used
+#' to instantiate extra cohorts.
+#'
+#' @name windowRecipeDoc
+#' @keywords internal
+NULL
+
 #' Helper for consistent documentation of subset arguments
 #'
 #' @param subsetCohort A character referring to a cohort table containing
