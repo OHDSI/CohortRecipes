@@ -26,7 +26,7 @@ recipeCohort <- function(cdm,
     recipe = recipe,
     conceptSet = conceptSet,
     subsetCohort = subsetCohort,
-    subsetCohortId = subsetCohortId
+    subsetCohortId = {{subsetCohortId}}
   )
 }
 
@@ -187,13 +187,88 @@ cohortRecipeInternal <- function(cdm,
                                  subsetCohortId,
                                  call = parent.frame()) {
   # initial checks
+  cdm <- omopgenerics::validateCdmArgument(cdm = cdm, call = call)
+  name <- omopgenerics::validateNameArgument(name = name, cdm = cdm, validation = "warning")
+  recipe <- validateRecipe(recipe, conceptSet, call = call)
+  conceptSet <- validateConceptSet(conceptSet, recipe, call = call)
+  omopgenerics::assertCharacter(subsetCohort, length = 1, null = TRUE, call = call)
+  prefix <- omopgenerics::tmpPrefix()
+  on.exit(omopgenerics::dropSourceTable(cdm = cdm, name = dplyr::starts_with(prefix)))
+  if (!is.null(subsetCohort)) {
+    omopgenerics::assertChoice(subsetCohort, names(cdm), call = call)
+    subsetCohort <- omopgenerics::validateCohortArgument(cdm[[subsetCohort]])
+    subsetCohortId <- omopgenerics::validateCohortIdArgument({{subsetCohortId}}, cohort = subsetCohort, call = call)
+    x <- subsetCohort |>
+      dplyr::filter(.data$cohort_definition_id %in% .env$subsetCohortId) |>
+      dplyr::rename(person_id = "subject_id") |>
+      dplyr::distinct(.data$person_id) |>
+      dplyr::compute(name = omopgenerics::uniqueTableName(prefix = prefix))
+  } else {
+    x <- NULL
+  }
 
   # get records
-
-  # set end date
+  nm <- omopgenerics::uniqueTableName(prefix = prefix)
+  records <- recipeRecords(
+    cdm = cdm,
+    recipe = recipe,
+    conceptSet = conceptSet,
+    x = x,
+    indexDate = NULL,
+    censorDate = NULL
+  ) |>
+    dplyr::compute(name = nm) |>
+    PatientProfiles::filterInObservation(indexDate = "cohort_start_date") |>
+    dplyr::compute(name = nm)
 
   # erafy
+  records <- OmopConstructor::collapseRecords(
+    x = records,
+    startDate = "cohort_start_date",
+    endDate = "cohort_end_date",
+    by = c("recipe", "subject_id"),
+    name = nm
+  )
 
+  # combine records
+  records <- combineRecords(records)
+
+  # settings
+  set <- dplyr::tibble(
+    cohort_definition_id = seq_along(recipes),
+    cohort_name = recipes,
+    recipe = recipe
+  ) |>
+    dplyr::mutate(recipe = dplyr::if_else(
+      .data$recipe %in% !!availableRecipes(),
+      .data$recipe,
+      NA_character_
+    ))
+
+  # attrition
+
+  # codelists
+  codelists <- codelistAttribute(conceptSet, recipe, set)
+
+  # cohort
+  nm <- omopgenerics::uniqueTableName(prefix = prefix)
+  cdm <- omopgenerics::insertTable(
+    cdm = cdm,
+    name = nm,
+    table = set |>
+      dplyr::select("cohort_definition_id", recipe = "cohort_name")
+  )
+  cdm[[name]] <- records |>
+    dplyr::inner_join(cdm[[nm]], by = "recipe") |>
+    dplyr::select(!"recipe") |>
+    dplyr::compute(name = name) |>
+    omopgenerics::newCohortTable(
+      cohortSetRef = set,
+      cohortAttritionRef = NULL,
+      cohortCodelistRef = codelists
+    )
+
+  return(cdm[[name]])
 }
 
 addRecipe <- function(x,
@@ -209,9 +284,11 @@ addRecipe <- function(x,
                       call = parent.frame()) {
   # initial checks
 
+  # prepare censorDate
+
   # get records
 
-  # set end date
+  # combine records
 
   # intersection
 }
@@ -219,9 +296,8 @@ addRecipe <- function(x,
 recipeRecords <- function(cdm,
                           recipe,
                           conceptSet,
-                          value,
                           x = NULL,
                           indexDate = NULL,
                           censorDate = NULL) {
-
+  # subject_id, recipe, cohort_start_date, cohort_end_date, indexDate, censorDate
 }
