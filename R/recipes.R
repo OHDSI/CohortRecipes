@@ -214,11 +214,10 @@ cohortRecipeInternal <- function(cdm,
     recipe = recipe,
     conceptSet = conceptSet,
     x = x,
+    inObservation = TRUE,
     indexDate = NULL,
     censorDate = NULL
   ) |>
-    dplyr::compute(name = nm) |>
-    PatientProfiles::filterInObservation(indexDate = "cohort_start_date") |>
     dplyr::compute(name = nm)
 
   # erafy
@@ -296,8 +295,21 @@ addRecipe <- function(x,
 recipeRecords <- function(cdm,
                           recipe,
                           conceptSet,
-                          x = NULL,
-                          indexDate = NULL,
-                          censorDate = NULL) {
+                          inObservation,
+                          prefix,
+                          x = NULL) {
+  if (!is.null(x)) {
+    xid <- omopgenerics::getPersonIdentifier(x = x)
+    x <- x |>
+      dplyr::select(dplyr::all_of(c("subject_id" = xid))) |>
+      dplyr::distinct() |>
+      dplyr::mutate()
+    CohortConstructor::addCohortTableIndex()
+  }
   # subject_id, recipe, cohort_start_date, cohort_end_date, indexDate, censorDate
+
+  if (inObservation) {
+    records <- records |>
+      PatientProfiles::filterInObservation(indexDate = "cohort_start_date")
+  }
 }

@@ -25,7 +25,17 @@
 obesityCohort <- function(cdm,
                           name,
                           conceptSet = NULL,
-                          bmiThreshold = NULL) {
+                          subsetCohort = NULL,
+                          subsetCohrotId = NULL) {
+  cohortRecipeInternal(
+    cdm = cdm,
+    name = name,
+    recipe = "obesity",
+    conceptSet = conceptSet,
+    subsetCohort = subsetCohort,
+    subsetCohortId = subsetCohortId
+  )
+
   # initial checks
   cdm <- omopgenerics::validateCdmArgument(cdm)
   name <- omopgenerics::validateNameArgument(name, cdm)
@@ -131,9 +141,22 @@ addObesity <- function(x,
                        indexDate = "cohort_start_date",
                        window = c(-Inf, 0),
                        conceptSet = NULL,
-                       bmiThreshold = NULL,
+                       censorDate = NULL,
                        nameStyle = "obesity",
                        name = tableName(x)) {
+  addRecipe(
+    x = x,
+    recipe = "obesity",
+    conceptSet = conceptSet,
+    value = "flag",
+    window = window,
+    order = NULL,
+    indexDate = indexDate,
+    censorDate = censorDate,
+    nameStyle = nameStyle,
+    name = name
+  )
+
   # initial checks
   x <- validateX(x)
   cdm <- omopgenerics::cdmReference(x)
