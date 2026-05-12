@@ -296,20 +296,148 @@ recipeRecords <- function(cdm,
                           recipe,
                           conceptSet,
                           inObservation,
-                          prefix,
-                          x = NULL) {
+                          x,
+                          name) {
+  prefix <- omopgenerics::tmpPrefix()
+
   if (!is.null(x)) {
     xid <- omopgenerics::getPersonIdentifier(x = x)
     x <- x |>
-      dplyr::select(dplyr::all_of(c("subject_id" = xid))) |>
+      dplyr::select(dplyr::all_of(c("person_id" = xid))) |>
       dplyr::distinct() |>
-      dplyr::mutate()
-    CohortConstructor::addCohortTableIndex()
+      dplyr::compute(name = omopgenerics::uniqueTableName(prefix = prefix))
+    CohortConstructor:::addIndex(x, cols = "person_id")
   }
-  # subject_id, recipe, cohort_start_date, cohort_end_date, indexDate, censorDate
 
-  if (inObservation) {
+  # get domains
+  concepts <- dplyr::as_tibble(conceptSet)
+  con <- omopgenerics::uniqueTableName(prefix = prefix)
+  cdm <- omopgenerics::insertTable(cdm = cdm, name = con, table = concepts)
+  cdm[[con]] <- cdm[[con]] |>
+    dplyr::left_join(
+      cdm$concept |>
+        dplyr::select("concept_id", "domain_id"),
+      by = "concept_id"
+    ) |>
+    dplyr::compute(name = con)
+
+  # supportedDomains
+  domains <- supportedDomains(cdm[[con]])
+
+  if (length(domains) == 0) {
+    records <- cdm$person |>
+      dplyr::select("subject_id" = "person_id") |>
+      utils::head(0) |>
+      dplyr::mutate(
+        concept_name = NA_character_,
+        cohort_start_date = as.Date(NA_character_),
+        cohort_end_date = as.Date(NA_character_)
+      ) |>
+      dplyr::compute(name = name)
+  } else {
+    records <- domains |>
+      purrr::map(\(dom) {
+
+        # get table
+        table <- tableDomain(domain = dom)
+        if (!table %in% names(cdm)) {
+          cli::cli_inform(c("!" = "Skipping {.pkg {table}} as not present in the cdm."))
+          return(NULL)
+        }
+        concept <- omopgenerics::omopColumns(table = table, field = "standard_concept_id")
+        startDate <- omopgenerics::omopColumns(table = table, field = "start_date")
+        endDate <- omopgenerics::omopColumns(table = table, field = "end_date")
+
+        # add indexes
+        nm1 <- omopgenerics::uniqueTableName(prefix = prefix)
+        cdm[[nm1]] <- cdm[[con]] |>
+          dplyr::filter(.data$domain_id == .env$dom) |>
+          dplyr::select(!!concept := "concept_id", "codelist_name") |>
+          dplyr::compute(name = nm1)
+        CohortConstructor:::addIndex(cdm[[nm1]], cols = "person_id")
+
+        # get records
+        rec <- cdm[[table]] |>
+          dplyr::inner_join(cdm[[nm1]], by = concept)
+        if (identical(startDate, endDate)) {
+          rec <- rec |>
+            dplyr::select(dplyr::any_of(c(
+              "codelist_name", "subject_id" = "person_id",
+              "cohort_start_date" = startDate,
+              "value_as_number", "value_as_concept_id", "unit_concept_id"
+            ))) |>
+            dplyr::mutate(cohort_end_date = .data$cohort_start_date)
+        } else {
+          rec <- rec |>
+            dplyr::select(dplyr::any_of(c(
+              "codelist_name", "subject_id" = "person_id",
+              "cohort_start_date" = startDate, "cohort_end_date" = endDate,
+              "value_as_number", "value_as_concept_id", "unit_concept_id"
+            ))) |>
+            dplyr::mutate(cohort_end_date = dplyr::coalesce(.data$cohort_end_date, .data$cohort_start_date))
+        }
+        if (inObservation) {
+          rec <- rec |>
+            PatientProfiles::filterInObservation(indexDate = "cohort_start_date")
+        }
+        rec <- rec |>
+          dplyr::compute(name = omopgenerics::uniqueTableName(prefix = prefix))
+
+        # subset to values of interest
+        if (table %in% c("observation", "measurement")) {
+
+        }
+
+        # drop concept table
+        omopgenerics::dropSourceTable(cdm = cdm, name = nm1)
+
+        return(rec)
+      }) |>
+      purrr::compact()
+
+    # combine all records
     records <- records |>
-      PatientProfiles::filterInObservation(indexDate = "cohort_start_date")
+      purrr::reduce(dplyr::union_all) |>
+      dplyr::select("codelist_name", "subject_id", "cohort_start_date", "cohort_end_date") |>
+      dplyr::compute(name = name)
   }
+
+  omopgenerics::dropSourceTable(cdm = cdm, name = dplyr::starts_with(prefix))
+
+  return(records)
+}
+supportedDomains <- function(concepts) {
+  domains <- concepts |>
+    dplyr::group_by(.data$domain_id) |>
+    dplyr::tally() |>
+    dplyr::collect()
+  supported <- c("Condition", "Device", "Drug", "Episode", "Measurement", "Observation", "Procedure", "Specimen", "Visit")
+  eliminated <- domains |>
+    dplyr::filter(!.data$domain_id %in% .env$supported)
+  if (nrow(eliminated) > 0) {
+    ne <- sum(eliminated$n)
+    c("!" = "{ne} {.emph concepts} ignored as not part of supported domains: {.var {supported}}.") |>
+      cli::cli_inform()
+    domains <- domains |>
+      dplyr::filter(.data$domain_id %in% .env$supported)
+  }
+  return(domains$domain_id)
+}
+tableDomain <- function(domain) {
+  swicth(domain,
+         "Condition" = "condition_occurrence",
+         "Device" = "device_exposure",
+         "Drug" = "drug_exposure",
+         "Episode" = "episode",
+         "Measurement" = "measurement",
+         "Observation" = "observation",
+         "Procedure" = "procedure_occurrence",
+         "Specimen" = "specimen",
+         "Visit" = "visit_occurrence")
+}
+insertConcepts <- function(concepts, cdm, nm) {
+
+  cdm <- omopgenerics::insertTable(cdm = cdm, name = nm, table = concepts)
+  col <- colnames(concepts)
+  CohortConstructor:::addIndex(cdm[[nm]], cols = )
 }
