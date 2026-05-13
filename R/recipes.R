@@ -292,12 +292,19 @@ addRecipe <- function(x,
   # intersection
 }
 
+conceptsFromRecipe <- function(recipe) {
+
+}
+getFiltersFromRecipe <- function(recipe) {
+
+}
 recipeRecords <- function(cdm,
                           recipe,
                           conceptSet,
                           inObservation,
                           x,
-                          name) {
+                          name,
+                          filters) {
   prefix <- omopgenerics::tmpPrefix()
 
   if (!is.null(x)) {
@@ -411,7 +418,7 @@ supportedDomains <- function(concepts) {
     dplyr::group_by(.data$domain_id) |>
     dplyr::tally() |>
     dplyr::collect()
-  supported <- c("Condition", "Device", "Drug", "Episode", "Measurement", "Observation", "Procedure", "Specimen", "Visit")
+  supported <- c("Condition", "Device", "Drug", "Measurement", "Observation", "Procedure", "Specimen", "Visit")
   eliminated <- domains |>
     dplyr::filter(!.data$domain_id %in% .env$supported)
   if (nrow(eliminated) > 0) {
